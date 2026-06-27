@@ -59,11 +59,12 @@ nav.tabs{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
 
 /* CREATOR AVATAR */
 .creator-avatar{position:fixed;top:14px;right:18px;z-index:50;}
-.creator-btn{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#3FC7B0,#2A9D8F);border:2px solid #3FC7B055;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#0B1120;cursor:default;position:relative;}
-.creator-tooltip{position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;white-space:nowrap;pointer-events:none;opacity:0;transform:translateY(-4px);transition:opacity .18s,transform .18s;}
-.creator-tooltip .tt-name{font-size:12.5px;font-weight:600;color:var(--ink);}
-.creator-tooltip .tt-role{font-size:11px;color:var(--ink-faint);margin-top:2px;}
-.creator-btn:hover .creator-tooltip{opacity:1;transform:translateY(0);}
+.creator-btn{display:flex;align-items:center;gap:9px;background:var(--bg-panel);border:1px solid var(--line);border-radius:40px;padding:5px 12px 5px 6px;cursor:default;position:relative;transition:border-color .18s;}
+.creator-btn:hover{border-color:var(--amber);}
+.creator-icon{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#F2A33C,#C97A1E);border:2px solid #F2A33C55;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:#1A1208;flex:none;}
+.creator-info{display:flex;flex-direction:column;}
+.creator-info .tt-name{font-size:12.5px;font-weight:600;color:var(--ink);font-family:'Space Grotesk',sans-serif;line-height:1.2;}
+.creator-info .tt-role{font-size:10.5px;color:var(--amber);margin-top:1px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;}
 
 .main{flex:1;min-width:0;padding:26px 32px 60px;}
 .page{display:none;}
@@ -258,8 +259,8 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
 <!-- CREATOR AVATAR -->
 <div class="creator-avatar">
   <div class="creator-btn">
-    S
-    <div class="creator-tooltip">
+    <div class="creator-icon">S</div>
+    <div class="creator-info">
       <div class="tt-name">Sulfikar</div>
       <div class="tt-role">Developer</div>
     </div>
