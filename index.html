@@ -1348,7 +1348,9 @@ function refreshModalImgActions(){
       console.log(`Kompresi: ${origKB}KB → ${compKB}KB`);
       const { error:upErr }=await sb.storage.from(BUCKET).upload(path, compressed, {upsert:true, contentType:'image/jpeg'});
       if(upErr) throw upErr;
-      await sb.from('item_images').upsert({warehouse:wh,stock_code:sc,storage_path:path,file_name:file.name},{onConflict:'warehouse,stock_code'});
+      await sb.from('item_images').delete().eq('warehouse',wh).eq('stock_code',sc);
+      const { error:insErr }=await sb.from('item_images').insert({warehouse:wh,stock_code:sc,storage_path:path,file_name:file.name});
+      if(insErr) throw insErr;
       imgCache.delete(key);
       await refreshModalImg(key);
       document.getElementById('navImgCount').textContent=await getImageCount();
@@ -1751,10 +1753,12 @@ document.getElementById('camSaveBtn').addEventListener('click', async()=>{
     const path = `${wh}/${sc}_${Date.now()}.jpg`;
     const { error:upErr } = await sb.storage.from(BUCKET).upload(path, blob, { upsert:true, contentType:'image/jpeg' });
     if(upErr) throw upErr;
-    await sb.from('item_images').upsert(
-      { warehouse:wh, stock_code:sc, storage_path:path, file_name:`foto_kamera_${Date.now()}.jpg` },
-      { onConflict:'warehouse,stock_code' }
+    // Hapus data lama dulu jika ada, lalu insert baru (hindari RLS upsert conflict)
+    await sb.from('item_images').delete().eq('warehouse', wh).eq('stock_code', sc);
+    const { error:insErr } = await sb.from('item_images').insert(
+      { warehouse:wh, stock_code:sc, storage_path:path, file_name:`foto_kamera_${Date.now()}.jpg` }
     );
+    if(insErr) throw insErr;
     imgCache.delete(activeModalKey);
     await refreshModalImg(activeModalKey);
     document.getElementById('navImgCount').textContent = await getImageCount();
