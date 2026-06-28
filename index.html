@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Katalog Stock — Warehouse Inventory</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{
   --bg:#0B1120;--bg-panel:#111A2E;--bg-panel-2:#0E1626;
@@ -63,7 +65,7 @@ nav.tabs{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
 .creator-btn:hover{border-color:var(--amber);}
 .creator-icon{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#F2A33C,#C97A1E);border:2px solid #F2A33C55;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:#1A1208;flex:none;}
 .creator-info{display:flex;flex-direction:column;}
-.creator-info .tt-name{font-size:12.5px;font-weight:600;color:var(--ink);font-family:'Space Grotesk',sans-serif;line-height:1.2;}
+.creator-info .tt-name{font-size:12.5px;font-weight:600;color:var(--ink);font-family:'Playfair Display',serif;line-height:1.2;}
 .creator-info .tt-role{font-size:10.5px;color:var(--amber);margin-top:1px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;}
 
 .main{flex:1;min-width:0;padding:26px 32px 60px;}
@@ -252,14 +254,13 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
     <input class="pin-input" type="password" id="pinInput" placeholder="••••••••" maxlength="30" autocomplete="off">
     <div class="pin-error" id="pinError"></div>
     <button class="pin-btn" id="pinSubmitBtn">Masuk sebagai Editor</button>
-    <button class="pin-skip" id="pinSkipBtn">Hanya Lihat (tanpa edit)</button>
+    <button class="pin-skip" id="pinSkipBtn">Pengunjung</button>
   </div>
 </div>
 
 <!-- CREATOR AVATAR -->
 <div class="creator-avatar">
-  <div class="creator-btn">
-    <div class="creator-icon">S</div>
+  <div class="creator-btn" style="padding:5px 12px;">
     <div class="creator-info">
       <div class="tt-name">Sulfikar</div>
       <div class="tt-role">Developer</div>
@@ -394,6 +395,7 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
         <select id="filterClass"><option value="">Semua Class</option></select>
         <select id="filterMnemonic"><option value="">Semua Brand/Mnemonic</option></select>
         <button class="btn ghost small" id="resetFiltersBtn">Reset</button>
+        <button class="btn small" id="exportPdfBtn" style="margin-left:auto;background:var(--amber);color:#1A1208;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Export PDF</button>
         <span class="result-count" id="resultCount"></span>
       </div>
       <div class="table-scroll">
@@ -1757,6 +1759,83 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); 
 
   await Promise.all([loadFilterOptions(), loadDashboard(), loadImageIndex()]);
 })();
+
+/* -------- EXPORT PDF KATALOG -------- */
+document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('exportPdfBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Memuat...';
+
+  try {
+    // Ambil semua data sesuai filter aktif (tanpa limit halaman)
+    let query = buildKatalogQuery();
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    // Header
+    doc.setFillColor(11, 17, 32);
+    doc.rect(0, 0, 297, 28, 'F');
+    doc.setTextColor(242, 163, 60);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('KATALOG STOCK — SM Mining', 14, 12);
+    doc.setTextColor(140, 155, 191);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Diekspor: ${new Date().toLocaleDateString('id-ID', {day:'2-digit',month:'long',year:'numeric'})}   |   Total Item: ${(data||[]).length}`, 14, 20);
+
+    // Tabel
+    const rows = (data || []).map(r => [
+      r.warehouse || '-',
+      r.pn || '-',
+      r.stock_code || '-',
+      r.mnemonic || '-',
+      r.class || '-',
+      r.item_name || '-',
+      r.uoi || '-',
+      r.total_soh != null ? r.total_soh : '-',
+      r.available != null ? r.available : '-',
+    ]);
+
+    doc.autoTable({
+      startY: 32,
+      head: [['Gudang','Part Number','Stock Code','Mnemonic','Class','Item / Deskripsi','UOI','Total SOH','Available']],
+      body: rows,
+      styles: { fontSize: 7.5, cellPadding: 2.5, textColor: [232,236,246], fillColor: [17,26,46] },
+      headStyles: { fillColor: [242,163,60], textColor: [26,18,8], fontStyle: 'bold', fontSize: 8 },
+      alternateRowStyles: { fillColor: [14,22,38] },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 24 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 'auto' },
+        6: { cellWidth: 14 },
+        7: { cellWidth: 20, halign: 'right' },
+        8: { cellWidth: 20, halign: 'right' },
+      },
+      margin: { left: 14, right: 14 },
+      didDrawPage: (d) => {
+        // Footer tiap halaman
+        doc.setFontSize(7);
+        doc.setTextColor(90,106,140);
+        doc.text(`Halaman ${d.pageNumber}`, 283, 205, { align: 'right' });
+        doc.text('SM Mining — Katalog Stock', 14, 205);
+      }
+    });
+
+    doc.save(`Katalog-SM-Mining-${new Date().toISOString().slice(0,10)}.pdf`);
+  } catch(e) {
+    alert('Gagal export PDF: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Export PDF';
+});
 </script>
 
 </body>
