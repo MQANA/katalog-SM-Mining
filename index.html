@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Katalog Stock — Warehouse Inventory</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -61,12 +61,12 @@ nav.tabs{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
 
 /* CREATOR AVATAR */
 .creator-avatar{position:fixed;top:14px;right:18px;z-index:50;}
-.creator-btn{display:flex;align-items:center;gap:9px;background:var(--bg-panel);border:1px solid var(--line);border-radius:40px;padding:5px 12px 5px 6px;cursor:default;position:relative;transition:border-color .18s;}
+.creator-btn{display:flex;align-items:center;gap:7px;background:var(--bg-panel);border:1px solid var(--line);border-radius:40px;padding:3px 10px;cursor:default;position:relative;transition:border-color .18s;}
 .creator-btn:hover{border-color:var(--amber);}
 .creator-icon{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#F2A33C,#C97A1E);border:2px solid #F2A33C55;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:#1A1208;flex:none;}
 .creator-info{display:flex;flex-direction:column;}
-.creator-info .tt-name{font-size:12.5px;font-weight:600;color:var(--ink);font-family:'Playfair Display',serif;line-height:1.2;}
-.creator-info .tt-role{font-size:10.5px;color:var(--amber);margin-top:1px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;}
+.creator-info .tt-name{font-size:11px;font-weight:700;color:var(--ink);font-family:'Dancing Script',cursive;line-height:1.2;}
+.creator-info .tt-role{font-size:9.5px;color:var(--amber);margin-top:0;letter-spacing:.02em;font-family:'Dancing Script',cursive;font-weight:600;}
 
 .main{flex:1;min-width:0;padding:26px 32px 60px;}
 .page{display:none;}
@@ -369,13 +369,13 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
         <span class="filter-active-note" id="dashFilterNote" style="display:none;">⚡ Filter aktif</span>
       </div>
       <div class="kpi-grid">
-        <div class="kpi-card" style="--accent:var(--amber)"><div class="kpi-label">Total Item (SKU)</div><div class="kpi-value" id="kpiItems"><span class="spinner"></span></div><div class="kpi-sub" id="kpiItemsSub">memuat...</div></div>
+        <div class="kpi-card" style="--accent:var(--amber)"><div class="kpi-label">Total Item</div><div class="kpi-value" id="kpiItems"><span class="spinner"></span></div><div class="kpi-sub" id="kpiItemsSub">memuat...</div></div>
         <div class="kpi-card" style="--accent:var(--teal)"><div class="kpi-label">Total Gudang</div><div class="kpi-value" id="kpiWH"><span class="spinner"></span></div><div class="kpi-sub">kode warehouse aktif</div></div>
         <div class="kpi-card" style="--accent:#9D7CF2"><div class="kpi-label">Total Qty SOH</div><div class="kpi-value" id="kpiSOH"><span class="spinner"></span></div><div class="kpi-sub">stock on hand</div></div>
         <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Total Nilai Inventory</div><div class="kpi-value" id="kpiValue"><span class="spinner"></span></div><div class="kpi-sub">own stock + consignment</div></div>
       </div>
       <div class="grid-2">
-        <div class="panel"><h3>Distribusi Item per Class <span class="tag">jumlah SKU</span></h3><div class="chart-wrap"><canvas id="chartClassDash"></canvas></div></div>
+        <div class="panel"><h3>Distribusi Item per Class <span class="tag">jumlah item</span></h3><div class="chart-wrap"><canvas id="chartClassDash"></canvas></div></div>
         <div class="panel"><h3>Top 8 Gudang <span class="tag">by jumlah item</span></h3><div id="topWHList"><div class="empty-state"><span class="spinner"></span></div></div></div>
       </div>
       <div class="grid-2">
@@ -453,7 +453,7 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
 
       <!-- KPI MEGA -->
       <div class="kpi-grid">
-        <div class="kpi-card" style="--accent:var(--amber)"><div class="kpi-label">Total Item MEGA</div><div class="kpi-value" id="megaKpiItems"><span class="spinner"></span></div><div class="kpi-sub">SKU di gudang MEGA</div></div>
+        <div class="kpi-card" style="--accent:var(--amber)"><div class="kpi-label">Total Item MEGA</div><div class="kpi-value" id="megaKpiItems"><span class="spinner"></span></div><div class="kpi-sub">item di gudang MEGA</div></div>
         <div class="kpi-card" style="--accent:var(--teal)"><div class="kpi-label">Total SOH MEGA</div><div class="kpi-value" id="megaKpiSOH"><span class="spinner"></span></div><div class="kpi-sub">stock on hand</div></div>
         <div class="kpi-card" style="--accent:#9D7CF2"><div class="kpi-label">Nilai Own Stock</div><div class="kpi-value" id="megaKpiOwn"><span class="spinner"></span></div><div class="kpi-sub">amount own stok</div></div>
         <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Nilai Consignment</div><div class="kpi-value" id="megaKpiConsign"><span class="spinner"></span></div><div class="kpi-sub">amount consign</div></div>
@@ -466,7 +466,7 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
           <div class="chart-wrap tall"><canvas id="megaChartValue"></canvas></div>
         </div>
         <div class="panel">
-          <h3>Jumlah Item MEGA per Class <span class="tag">SKU</span></h3>
+          <h3>Jumlah Item MEGA per Class <span class="tag">item</span></h3>
           <div class="chart-wrap tall"><canvas id="megaChartCount"></canvas></div>
         </div>
       </div>
@@ -579,6 +579,7 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
     <div class="cam-controls">
       <button class="cam-btn" id="camFlipBtn">🔄 Balik</button>
       <button class="cam-snap" id="camSnapBtn" title="Ambil foto">📸</button>
+      <button class="cam-btn" id="camTorchBtn" title="Nyalakan Lampu">💡</button>
       <button class="cam-btn" id="camCancelBtn">Batal</button>
     </div>
   </div>
@@ -1638,41 +1639,79 @@ async function compressDataUrl(dataUrl, maxPx=1024, quality=0.82){
 let camStream = null;
 let camFacingMode = 'environment'; // mulai dengan kamera belakang
 let camCapturedDataUrl = null;
+let camTorchOn = false;
+
+async function startCamStream(){
+  const video = document.getElementById('camVideo');
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  camTorchOn = false;
+  updateTorchBtn();
+  camStream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode: camFacingMode, width:{ideal:1280}, height:{ideal:960} },
+    audio: false
+  });
+  video.srcObject = camStream;
+  await video.play().catch(()=>{});
+}
 
 async function openCamera(){
   const overlay = document.getElementById('camOverlay');
-  const video = document.getElementById('camVideo');
   document.getElementById('camLiveWrap').style.display = 'flex';
   document.getElementById('camPreviewWrap').style.display = 'none';
   overlay.classList.add('open');
+  // Reset tombol save jika sebelumnya freeze
+  const btn = document.getElementById('camSaveBtn');
+  btn.textContent = '✅ Simpan Foto';
+  btn.disabled = false;
+  camCapturedDataUrl = null;
   try {
-    if(camStream) camStream.getTracks().forEach(t=>t.stop());
-    camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: camFacingMode, width:{ideal:1280}, height:{ideal:960} },
-      audio: false
-    });
-    video.srcObject = camStream;
+    await startCamStream();
   } catch(err) {
     alert('Tidak bisa akses kamera: ' + err.message + '\nPastikan izin kamera sudah diberikan di browser.');
     closeCamera();
   }
 }
+
 function closeCamera(){
-  if(camStream) camStream.getTracks().forEach(t=>t.stop());
-  camStream = null;
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  camTorchOn = false;
+  updateTorchBtn();
   document.getElementById('camOverlay').classList.remove('open');
+}
+
+function updateTorchBtn(){
+  const btn = document.getElementById('camTorchBtn');
+  if(!btn) return;
+  btn.innerHTML = camTorchOn ? '🔦' : '💡';
+  btn.title = camTorchOn ? 'Matikan Lampu' : 'Nyalakan Lampu';
+  btn.style.background = camTorchOn ? 'var(--amber)' : '';
+  btn.style.color = camTorchOn ? '#1A1208' : '';
+}
+
+async function toggleTorch(){
+  if(!camStream) return;
+  const track = camStream.getVideoTracks()[0];
+  if(!track) return;
+  const caps = track.getCapabilities ? track.getCapabilities() : {};
+  if(!caps.torch){ alert('Perangkat ini tidak mendukung lampu kamera.'); return; }
+  camTorchOn = !camTorchOn;
+  try {
+    await track.applyConstraints({ advanced:[{ torch: camTorchOn }] });
+    updateTorchBtn();
+  } catch(e) {
+    alert('Gagal mengaktifkan lampu: ' + e.message);
+    camTorchOn = !camTorchOn;
+  }
 }
 
 document.getElementById('camCloseBtn').addEventListener('click', closeCamera);
 document.getElementById('camCancelBtn').addEventListener('click', closeCamera);
+
+document.getElementById('camTorchBtn').addEventListener('click', toggleTorch);
+
 document.getElementById('camFlipBtn').addEventListener('click', async()=>{
   camFacingMode = camFacingMode==='environment' ? 'user' : 'environment';
-  if(camStream) camStream.getTracks().forEach(t=>t.stop());
-  const video = document.getElementById('camVideo');
-  camStream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: camFacingMode }, audio: false
-  });
-  video.srcObject = camStream;
+  try { await startCamStream(); } catch(e){ alert('Gagal ganti kamera: '+e.message); }
 });
 
 document.getElementById('camSnapBtn').addEventListener('click', ()=>{
@@ -1681,20 +1720,21 @@ document.getElementById('camSnapBtn').addEventListener('click', ()=>{
   canvas.width = video.videoWidth || 1280;
   canvas.height = video.videoHeight || 960;
   canvas.getContext('2d').drawImage(video, 0, 0);
-  // Simpan sebagai dataURL (synchronous — tidak ada race condition)
   camCapturedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
   document.getElementById('camPreviewImg').src = camCapturedDataUrl;
   document.getElementById('camLiveWrap').style.display = 'none';
   document.getElementById('camPreviewWrap').style.display = 'flex';
-  // Stop stream setelah foto diambil
-  if(camStream) camStream.getTracks().forEach(t=>t.stop());
+  // Matikan torch & stop stream setelah foto diambil
+  camTorchOn = false;
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  updateTorchBtn();
 });
 
-document.getElementById('camRetakeBtn').addEventListener('click', ()=>{
+document.getElementById('camRetakeBtn').addEventListener('click', async()=>{
   camCapturedDataUrl = null;
   document.getElementById('camPreviewWrap').style.display = 'none';
   document.getElementById('camLiveWrap').style.display = 'flex';
-  openCamera();
+  try { await startCamStream(); } catch(e){ alert('Gagal buka kamera: '+e.message); closeCamera(); }
 });
 
 document.getElementById('camSaveBtn').addEventListener('click', async()=>{
@@ -1706,7 +1746,6 @@ document.getElementById('camSaveBtn').addEventListener('click', async()=>{
   btn.textContent = '⏳ Menyimpan...';
   btn.disabled = true;
   try {
-    // Konversi + kompres dataURL → Blob
     const blob = await compressDataUrl(camCapturedDataUrl);
     const [wh, sc] = activeModalKey.split('|');
     const path = `${wh}/${sc}_${Date.now()}.jpg`;
@@ -1722,7 +1761,10 @@ document.getElementById('camSaveBtn').addEventListener('click', async()=>{
     if(document.getElementById('page-katalogvisual').classList.contains('active')) fetchVisualPage();
     if(document.getElementById('page-galeri').classList.contains('active')) loadGallery();
     if(document.getElementById('page-katalog').classList.contains('active')) fetchKatalogPage();
+    // Reset semua state kamera untuk foto berikutnya
     camCapturedDataUrl = null;
+    btn.textContent = '✅ Simpan Foto';
+    btn.disabled = false;
     closeCamera();
   } catch(err) {
     alert('Gagal simpan foto: ' + err.message);
