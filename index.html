@@ -562,8 +562,13 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
     <div class="modal-body">
       <div class="img-zone" id="imgZone">
         <div class="ph" id="imgPlaceholder">Belum ada gambar untuk item ini.</div>
-        <img id="modalImg" style="display:none;">
-        <div id="imgActions" style="margin-top:8px;display:flex;gap:8px;justify-content:center;"></div>
+        <div id="imgSlider" style="display:none;position:relative;">
+          <img id="modalImg" style="width:100%;border-radius:8px;">
+          <button id="imgPrevBtn" style="display:none;position:absolute;left:6px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;">‹</button>
+          <button id="imgNextBtn" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;">›</button>
+          <div id="imgDots" style="display:flex;justify-content:center;gap:6px;margin-top:8px;"></div>
+        </div>
+        <div id="imgActions" style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
       </div>
       <div class="detail-grid" id="modalDetailGrid"></div>
     </div>
@@ -627,7 +632,10 @@ let sortAsc        = true;
 let dashStats      = null;
 let filterOptions  = { warehouses:[], classes:[], mnemonics:[] };
 let activeModalKey = null;  // "warehouse|stock_code"
-let imgCache       = new Map();  // key -> publicUrl
+let imgCache       = new Map();  // key -> publicUrl (foto pertama, untuk thumbnail)
+let modalImgList   = [];         // daftar semua foto item yang sedang dibuka di modal
+let modalImgIndex  = 0;          // index foto yang sedang tampil di slider
+const MAX_IMG_PER_ITEM = 5;
 let uploadHistory  = [];
 let chartClassDash, chartClassCount, chartClassValue;
 
@@ -1295,29 +1303,52 @@ async function openModal(key){
 }
 async function refreshModalImg(key){
   const [warehouse,stockCode]=key.split('|');
-  const { data }=await sb.from('item_images').select('storage_path').eq('warehouse',warehouse).eq('stock_code',stockCode).maybeSingle();
-  if(data){
-    const { data:ud }=sb.storage.from(BUCKET).getPublicUrl(data.storage_path);
-    imgCache.set(key,ud.publicUrl);
-    document.getElementById('modalImg').src=ud.publicUrl;
-    document.getElementById('modalImg').style.display='block';
+  const { data }=await sb.from('item_images').select('*').eq('warehouse',warehouse).eq('stock_code',stockCode).order('created_at',{ascending:true});
+  modalImgList = data || [];
+  modalImgIndex = 0;
+  if(modalImgList.length){
+    modalImgList.forEach(img=>{
+      const { data:ud }=sb.storage.from(BUCKET).getPublicUrl(img.storage_path);
+      img._url = ud.publicUrl;
+    });
+    imgCache.set(key, modalImgList[0]._url);
+    document.getElementById('imgSlider').style.display='block';
     document.getElementById('imgPlaceholder').style.display='none';
+    renderModalSlider();
   } else {
-    document.getElementById('modalImg').style.display='none';
+    document.getElementById('imgSlider').style.display='none';
     document.getElementById('imgPlaceholder').style.display='block';
   }
   refreshModalImgActions();
 }
+function renderModalSlider(){
+  const modalImg = document.getElementById('modalImg');
+  if(!modalImgList.length) return;
+  modalImg.src = modalImgList[modalImgIndex]._url;
+  const multi = modalImgList.length > 1;
+  document.getElementById('imgPrevBtn').style.display = multi ? 'block' : 'none';
+  document.getElementById('imgNextBtn').style.display = multi ? 'block' : 'none';
+  document.getElementById('imgDots').innerHTML = multi ? modalImgList.map((_,i)=>
+    `<span style="width:7px;height:7px;border-radius:50%;background:${i===modalImgIndex?'var(--amber)':'var(--line)'};"></span>`
+  ).join('') : '';
+  refreshModalImgActions();
+}
+document.getElementById('imgPrevBtn').addEventListener('click', ()=>{
+  modalImgIndex = (modalImgIndex - 1 + modalImgList.length) % modalImgList.length;
+  renderModalSlider();
+});
+document.getElementById('imgNextBtn').addEventListener('click', ()=>{
+  modalImgIndex = (modalImgIndex + 1) % modalImgList.length;
+  renderModalSlider();
+});
 function refreshModalImgActions(){
   const key=activeModalKey;
-  const hasImg=!!imgCache.get(key);
+  const hasImg = modalImgList.length > 0;
   const wrap=document.getElementById('imgActions');
 
-  // Buat gambar modal bisa di-zoom
   const modalImg = document.getElementById('modalImg');
   modalImg.classList.toggle('zoomable', hasImg);
   modalImg.onclick = hasImg ? ()=>{
-    const r = document.querySelector('#modalDetailGrid .detail-item .v')?.textContent || '';
     const name = document.getElementById('modalItemName').textContent;
     openLightbox(modalImg.src, name);
   } : null;
@@ -1326,52 +1357,49 @@ function refreshModalImgActions(){
     wrap.innerHTML='<span style="font-size:11px;color:var(--ink-faint);">Login sebagai editor untuk upload gambar</span>';
     return;
   }
+  const full = modalImgList.length >= MAX_IMG_PER_ITEM;
   wrap.innerHTML=`
-    <label class="btn small" style="cursor:pointer;">
-      📁 ${hasImg?'Ganti':'Upload'} File
+    ${full?'':`<label class="btn small" style="cursor:pointer;">
+      📁 Tambah Foto
       <input type="file" id="imgFileInput" accept="image/*" style="display:none;">
     </label>
-    <button class="btn small" id="camOpenBtn" style="background:var(--teal);color:#06201B;">📷 Kamera</button>
-    ${hasImg?'<button class="btn ghost small" id="removeImgBtn">🗑 Hapus</button>':''}
+    <button class="btn small" id="camOpenBtn" style="background:var(--teal);color:#06201B;">📷 Kamera</button>`}
+    ${hasImg?'<button class="btn ghost small" id="removeImgBtn">🗑 Hapus Foto Ini</button>':''}
+    <span style="font-size:11px;color:var(--ink-faint);align-self:center;">${modalImgList.length}/${MAX_IMG_PER_ITEM} foto</span>
   `;
 
-  document.getElementById('imgFileInput').addEventListener('change',async e=>{
+  document.getElementById('imgFileInput')?.addEventListener('change',async e=>{
     const file=e.target.files[0];
     if(!file||!key) return;
+    if(modalImgList.length >= MAX_IMG_PER_ITEM){ alert(`Maksimal ${MAX_IMG_PER_ITEM} foto per item.`); return; }
     const [wh,sc]=key.split('|');
     const path=`${wh}/${sc}_${Date.now()}.jpg`;
     try{
-      // Kompres sebelum upload
       const compressed = await compressImage(file);
-      const origKB = Math.round(file.size/1024);
-      const compKB  = Math.round(compressed.size/1024);
-      console.log(`Kompresi: ${origKB}KB → ${compKB}KB`);
       const { error:upErr }=await sb.storage.from(BUCKET).upload(path, compressed, {upsert:true, contentType:'image/jpeg'});
       if(upErr) throw upErr;
-      await sb.from('item_images').delete().eq('warehouse',wh).eq('stock_code',sc);
       const { error:insErr }=await sb.from('item_images').insert({warehouse:wh,stock_code:sc,storage_path:path,file_name:file.name});
       if(insErr) throw insErr;
-      imgCache.delete(key);
       await refreshModalImg(key);
       document.getElementById('navImgCount').textContent=await getImageCount();
-      await loadImageIndex(); // refresh cache gambar
+      await loadImageIndex();
       if(document.getElementById('page-katalogvisual').classList.contains('active')) fetchVisualPage();
       if(document.getElementById('page-galeri').classList.contains('active')) loadGallery();
       if(document.getElementById('page-katalog').classList.contains('active')) fetchKatalogPage();
     }catch(err){ alert('Gagal upload: '+err.message); }
   });
 
-  document.getElementById('camOpenBtn').addEventListener('click', openCamera);
+  document.getElementById('camOpenBtn')?.addEventListener('click', openCamera);
 
   document.getElementById('removeImgBtn')?.addEventListener('click',async()=>{
-    if(!confirm('Hapus gambar ini dari database?')) return;
-    const [wh,sc]=key.split('|');
-    const { data:imgData }=await sb.from('item_images').select('storage_path').eq('warehouse',wh).eq('stock_code',sc).maybeSingle();
-    if(imgData) await sb.storage.from(BUCKET).remove([imgData.storage_path]);
-    await sb.from('item_images').delete().eq('warehouse',wh).eq('stock_code',sc);
-    imgCache.delete(key);
+    if(!confirm('Hapus foto yang sedang tampil ini?')) return;
+    const target = modalImgList[modalImgIndex];
+    if(!target) return;
+    await sb.storage.from(BUCKET).remove([target.storage_path]);
+    await sb.from('item_images').delete().eq('id', target.id);
     await refreshModalImg(key);
     document.getElementById('navImgCount').textContent=await getImageCount();
+    await loadImageIndex();
     if(document.getElementById('page-katalogvisual').classList.contains('active')) fetchVisualPage();
     if(document.getElementById('page-galeri').classList.contains('active')) loadGallery();
     if(document.getElementById('page-katalog').classList.contains('active')) fetchKatalogPage();
@@ -1657,6 +1685,10 @@ async function startCamStream(){
 }
 
 async function openCamera(){
+  if(modalImgList.length >= MAX_IMG_PER_ITEM){
+    alert(`Maksimal ${MAX_IMG_PER_ITEM} foto per item. Hapus salah satu foto dulu jika ingin menambah.`);
+    return;
+  }
   const overlay = document.getElementById('camOverlay');
   document.getElementById('camLiveWrap').style.display = 'flex';
   document.getElementById('camPreviewWrap').style.display = 'none';
@@ -1748,13 +1780,17 @@ document.getElementById('camSaveBtn').addEventListener('click', async()=>{
   btn.textContent = '⏳ Menyimpan...';
   btn.disabled = true;
   try {
+    if(modalImgList.length >= MAX_IMG_PER_ITEM){
+      alert(`Maksimal ${MAX_IMG_PER_ITEM} foto per item.`);
+      btn.textContent = '✅ Simpan Foto';
+      btn.disabled = false;
+      return;
+    }
     const blob = await compressDataUrl(camCapturedDataUrl);
     const [wh, sc] = activeModalKey.split('|');
     const path = `${wh}/${sc}_${Date.now()}.jpg`;
     const { error:upErr } = await sb.storage.from(BUCKET).upload(path, blob, { upsert:true, contentType:'image/jpeg' });
     if(upErr) throw upErr;
-    // Hapus data lama dulu jika ada, lalu insert baru (hindari RLS upsert conflict)
-    await sb.from('item_images').delete().eq('warehouse', wh).eq('stock_code', sc);
     const { error:insErr } = await sb.from('item_images').insert(
       { warehouse:wh, stock_code:sc, storage_path:path, file_name:`foto_kamera_${Date.now()}.jpg` }
     );
