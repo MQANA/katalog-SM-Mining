@@ -1273,33 +1273,19 @@ async function loadMegaDashboard(){
       <td class="num" style="color:var(--amber);">${fmtRupiahFull(r.total_value)}</td>
     </tr>`).join('');
 
-  // Class A & C — Stock Habis (total_soh = 0 atau null)
-  const { data: acData } = await sb.from('items')
-    .select('item_name, pn, stock_code, class, total_soh, available, uoi, bin_location')
-    .eq('warehouse', 'MEGA')
-    .in('class', ['A','C'])
-    .or('total_soh.eq.0,total_soh.is.null')
-    .order('class', {ascending:true})
-    .order('item_name', {ascending:true})
-    .limit(50);
+  // Class A & C — Stock Habis (total_soh::numeric = 0)
+  const { data: acData } = await sb.rpc('get_ac_stock_habis_mega');
 
-  // Total item Class A&C SOH > 0 untuk persentase
-  const { count: acReadyCount } = await sb.from('items')
-    .select('*', {count:'exact', head:true})
-    .eq('warehouse','MEGA')
-    .in('class',['A','C'])
-    .gt('total_soh', 0);
-
-  const { count: acTotalCount } = await sb.from('items')
-    .select('*', {count:'exact', head:true})
-    .eq('warehouse','MEGA')
-    .in('class',['A','C']);
+  // Persentase siap: ambil lewat RPC agar cast numeric akurat
+  const { data: acStats } = await sb.rpc('get_ac_stats_mega');
 
   const acList = acData || [];
-  window._acList = acList; // simpan untuk diakses onclick
+  window._acList = acList;
+  const acReadyCount = acStats?.[0]?.ready_count || acStats?.ready_count || 0;
+  const acTotalCount = acStats?.[0]?.total_count || acStats?.total_count || 0;
   const cntA = acList.filter(r=>r.class==='A').length;
   const cntC = acList.filter(r=>r.class==='C').length;
-  const pctReady = acTotalCount ? ((acReadyCount||0)/acTotalCount*100).toFixed(1) : '0.0';
+  const pctReady = acTotalCount ? ((acReadyCount)/acTotalCount*100).toFixed(1) : '0.0';
 
   document.getElementById('megaLowStockBox').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
@@ -1327,25 +1313,31 @@ async function loadMegaDashboard(){
     </div>
     ${acList.length===0
       ? `<div style="color:var(--ink-faint);font-size:12.5px;padding:8px 0;">Semua item Class A & C di MEGA masih ada stok. ✅</div>`
-      : `<div style="border:1px solid var(--line);border-radius:8px;overflow:hidden;">
-          <div style="display:grid;grid-template-columns:1fr 48px 60px;padding:6px 10px;background:var(--bg-panel);border-bottom:1px solid var(--line);">
-            <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;">ITEM</span>
-            <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:center;">CLASS</span>
-            <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:right;">SOH</span>
+      : `<div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:11px;color:var(--ink-faint);">${acList.length} item ditemukan</span>
+            <button onclick="(function(){const t=document.getElementById('acDetailTable');const b=document.getElementById('acToggleBtn');const shown=t.style.display!=='none';t.style.display=shown?'none':'block';b.textContent=shown?'▼ Tampilkan Detail':'▲ Sembunyikan Detail';})()" id="acToggleBtn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink);cursor:pointer;">▼ Tampilkan Detail</button>
           </div>
-          ${acList.map((r,i)=>`
-            <div onclick="openModal('MEGA|${r.stock_code}')" style="display:grid;grid-template-columns:1fr 48px 60px;padding:8px 10px;border-bottom:${i<acList.length-1?'1px solid var(--line-soft)':'none'};align-items:center;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-panel)'" onmouseout="this.style.background='transparent'">
-              <div>
-                <div style="font-size:12px;color:var(--ink);font-weight:500;">${esc(r.item_name||'').slice(0,34)}</div>
-                <div class="mono" style="color:var(--ink-faint);font-size:10px;">${esc(r.stock_code||'')}</div>
-              </div>
-              <div style="text-align:center;">
-                <span class="chip" style="background:${classColor(r.class||'')}22;color:${classColor(r.class||'')};font-size:9px;">${esc(r.class||'')}</span>
-              </div>
-              <div style="text-align:right;">
-                <span class="badge warn" style="font-size:10px;">0</span>
-              </div>
-            </div>`).join('')}
+          <div id="acDetailTable" style="display:none;border:1px solid var(--line);border-radius:8px;overflow:hidden;">
+            <div style="display:grid;grid-template-columns:1fr 48px 60px;padding:6px 10px;background:var(--bg-panel);border-bottom:1px solid var(--line);">
+              <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;">ITEM</span>
+              <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:center;">CLASS</span>
+              <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:right;">SOH</span>
+            </div>
+            ${acList.map((r,i)=>`
+              <div onclick="openModal('MEGA|${r.stock_code}')" style="display:grid;grid-template-columns:1fr 48px 60px;padding:8px 10px;border-bottom:${i<acList.length-1?'1px solid var(--line-soft)':'none'};align-items:center;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-panel)'" onmouseout="this.style.background='transparent'">
+                <div>
+                  <div style="font-size:12px;color:var(--ink);font-weight:500;">${esc(r.item_name||'').slice(0,34)}</div>
+                  <div class="mono" style="color:var(--ink-faint);font-size:10px;">${esc(r.stock_code||'')}</div>
+                </div>
+                <div style="text-align:center;">
+                  <span class="chip" style="background:${classColor(r.class||'')}22;color:${classColor(r.class||'')};font-size:9px;">${esc(r.class||'')}</span>
+                </div>
+                <div style="text-align:right;">
+                  <span class="badge warn" style="font-size:10px;">0</span>
+                </div>
+              </div>`).join('')}
+          </div>
         </div>`
     }`;
 }
