@@ -459,6 +459,7 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
         <div class="kpi-card" style="--accent:var(--teal)"><div class="kpi-label">Total SOH MEGA</div><div class="kpi-value" id="megaKpiSOH"><span class="spinner"></span></div><div class="kpi-sub">stock on hand</div></div>
         <div class="kpi-card" style="--accent:#9D7CF2"><div class="kpi-label">Nilai Own Stock</div><div class="kpi-value" id="megaKpiOwn"><span class="spinner"></span></div><div class="kpi-sub">amount own stok</div></div>
         <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Nilai Consignment</div><div class="kpi-value" id="megaKpiConsign"><span class="spinner"></span></div><div class="kpi-sub">amount consign</div></div>
+        <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Stock Habis (SOH=0)</div><div class="kpi-value" id="megaKpiHabis"><span class="spinner"></span></div><div class="kpi-sub">item total SOH = 0</div></div>
       </div>
 
       <!-- 2 CHARTS -->
@@ -503,7 +504,7 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
           </table>
         </div>
         <div class="panel">
-          <h3>Stock Negatif MEGA <span class="tag">available &lt; 0</span></h3>
+          <h3>Class A & C — Stock Habis <span class="tag">total SOH = 0</span></h3>
           <div id="megaLowStockBox"><div class="empty-state"><span class="spinner"></span></div></div>
         </div>
       </div>
@@ -1185,7 +1186,7 @@ async function preloadImages(rows){
 let megaChartValue, megaChartCount;
 async function loadMegaDashboard(){
   // reset loading state
-  ['megaKpiItems','megaKpiSOH','megaKpiOwn','megaKpiConsign'].forEach(id=>{
+  ['megaKpiItems','megaKpiSOH','megaKpiOwn','megaKpiConsign','megaKpiHabis'].forEach(id=>{
     document.getElementById(id).innerHTML='<span class="spinner"></span>';
   });
   document.getElementById('megaDetailTbody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;"><span class="spinner"></span></td></tr>';
@@ -1201,6 +1202,13 @@ async function loadMegaDashboard(){
   document.getElementById('megaKpiSOH').textContent     = fmtNum(data.total_soh);
   document.getElementById('megaKpiOwn').textContent     = fmtRupiah(data.total_own_value);
   document.getElementById('megaKpiConsign').textContent = fmtRupiah(data.total_consign_value);
+
+  // Hitung stock habis (SOH=0) semua class di MEGA
+  const { count: habisCount } = await sb.from('items')
+    .select('*', {count:'exact', head:true})
+    .eq('warehouse','MEGA')
+    .eq('total_soh', 0);
+  document.getElementById('megaKpiHabis').textContent = fmtNum(habisCount||0);
 
   const cs = (data.class_stats || []).sort((a,b)=>b.total_value-a.total_value);
   const totalItems = cs.reduce((s,c)=>s+c.item_count,0);
@@ -1265,20 +1273,81 @@ async function loadMegaDashboard(){
       <td class="num" style="color:var(--amber);">${fmtRupiahFull(r.total_value)}</td>
     </tr>`).join('');
 
-  // Low stock
-  const ls = data.low_stock_items||[];
-  document.getElementById('megaLowStockBox').innerHTML = ls.length===0
-    ? `<div style="color:var(--ink-faint);font-size:12.5px;padding:8px 0;">Tidak ada stock negatif di gudang MEGA. ✅</div>`
-    : ls.map(r=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:12.3px;">
-          <div>
-            <div style="color:var(--ink);">${esc(r.item_name||'').slice(0,36)}</div>
-            <div class="mono" style="color:var(--ink-faint);font-size:10.8px;">${esc(r.pn||'')} · 
-              <span class="chip" style="background:${classColor(r.class||'')}22;color:${classColor(r.class||'')};font-size:9px;">${esc(r.class||'')}</span>
-            </div>
+  // Class A & C — Stock Habis (total_soh = 0 atau null)
+  const { data: acData } = await sb.from('items')
+    .select('item_name, pn, stock_code, class, total_soh, available, uoi, bin_location')
+    .eq('warehouse', 'MEGA')
+    .in('class', ['A','C'])
+    .or('total_soh.eq.0,total_soh.is.null')
+    .order('class', {ascending:true})
+    .order('item_name', {ascending:true})
+    .limit(50);
+
+  // Total item Class A&C SOH > 0 untuk persentase
+  const { count: acReadyCount } = await sb.from('items')
+    .select('*', {count:'exact', head:true})
+    .eq('warehouse','MEGA')
+    .in('class',['A','C'])
+    .gt('total_soh', 0);
+
+  const { count: acTotalCount } = await sb.from('items')
+    .select('*', {count:'exact', head:true})
+    .eq('warehouse','MEGA')
+    .in('class',['A','C']);
+
+  const acList = acData || [];
+  window._acList = acList; // simpan untuk diakses onclick
+  const cntA = acList.filter(r=>r.class==='A').length;
+  const cntC = acList.filter(r=>r.class==='C').length;
+  const pctReady = acTotalCount ? ((acReadyCount||0)/acTotalCount*100).toFixed(1) : '0.0';
+
+  document.getElementById('megaLowStockBox').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+      <div style="display:flex;gap:6px;">
+        <span class="chip" style="background:${classColor('A')}22;color:${classColor('A')};font-size:10px;">A: ${cntA} item habis</span>
+        <span class="chip" style="background:${classColor('C')}22;color:${classColor('C')};font-size:10px;">C: ${cntC} item habis</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--ink-faint);margin-bottom:2px;">Total habis</div>
+        <div style="font-size:22px;font-weight:700;color:var(--red);">${acList.length}</div>
+        <div style="font-size:10px;color:var(--ink-faint);">item</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--ink-faint);margin-bottom:2px;">Stok tersedia</div>
+        <div style="font-size:22px;font-weight:700;color:var(--teal);">${pctReady}%</div>
+        <div style="font-size:10px;color:var(--ink-faint);">Class A & C SOH > 0</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--ink-faint);margin-bottom:2px;">Total item</div>
+        <div style="font-size:22px;font-weight:700;color:var(--ink);">${acTotalCount||0}</div>
+        <div style="font-size:10px;color:var(--ink-faint);">Class A & C MEGA</div>
+      </div>
+    </div>
+    ${acList.length===0
+      ? `<div style="color:var(--ink-faint);font-size:12.5px;padding:8px 0;">Semua item Class A & C di MEGA masih ada stok. ✅</div>`
+      : `<div style="border:1px solid var(--line);border-radius:8px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:1fr 48px 60px;padding:6px 10px;background:var(--bg-panel);border-bottom:1px solid var(--line);">
+            <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;">ITEM</span>
+            <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:center;">CLASS</span>
+            <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:right;">SOH</span>
           </div>
-          <span class="badge warn">${fmtNum(r.available)}</span>
-        </div>`).join('');
+          ${acList.map((r,i)=>`
+            <div onclick="openModal('MEGA|${r.stock_code}')" style="display:grid;grid-template-columns:1fr 48px 60px;padding:8px 10px;border-bottom:${i<acList.length-1?'1px solid var(--line-soft)':'none'};align-items:center;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-panel)'" onmouseout="this.style.background='transparent'">
+              <div>
+                <div style="font-size:12px;color:var(--ink);font-weight:500;">${esc(r.item_name||'').slice(0,34)}</div>
+                <div class="mono" style="color:var(--ink-faint);font-size:10px;">${esc(r.stock_code||'')}</div>
+              </div>
+              <div style="text-align:center;">
+                <span class="chip" style="background:${classColor(r.class||'')}22;color:${classColor(r.class||'')};font-size:9px;">${esc(r.class||'')}</span>
+              </div>
+              <div style="text-align:right;">
+                <span class="badge warn" style="font-size:10px;">0</span>
+              </div>
+            </div>`).join('')}
+        </div>`
+    }`;
 }
 
 /* ---------- modal ---------- */
