@@ -244,6 +244,78 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
 .mobile-bar{display:none;align-items:center;gap:10px;margin-bottom:14px;}
 @media(max-width:980px){.mobile-bar{display:flex;}}
 .mobile-bar button{background:var(--bg-panel);border:1px solid var(--line);color:var(--ink);width:38px;height:38px;border-radius:8px;}
+
+/* ── MOBILE (≤ 640px) ── */
+@media(max-width:640px){
+  /* Layout */
+  .main{padding:12px 10px 80px;}
+  .page-head{margin-bottom:14px;}
+  .page-head h1{font-size:18px;}
+  .eyebrow{font-size:9px;}
+
+  /* KPI grid → 2 kolom di HP */
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .kpi-card{padding:10px 10px 8px;}
+  .kpi-value{font-size:18px;}
+  .kpi-label{font-size:10px;}
+  .kpi-sub{font-size:10px;}
+
+  /* Toolbar filter → wrap ke bawah */
+  .toolbar{flex-wrap:wrap;gap:6px;}
+  .toolbar input[type=text]{min-width:0;width:100%;flex:1 1 100%;}
+  .toolbar select{min-width:0;flex:1 1 calc(50% - 4px);}
+  .toolbar .btn{flex:1 1 auto;}
+
+  /* Tabel katalog → scroll horizontal */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table.cat-table{min-width:700px;font-size:11px;}
+
+  /* Modal → full screen di HP */
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal{max-width:100%;width:100%;border-radius:18px 18px 0 0;max-height:94vh;}
+  .modal-head{padding:14px 14px 10px;}
+  .modal-body{padding:0 14px 24px;}
+  .modal-detail-grid{grid-template-columns:1fr 1fr;}
+
+  /* Foto modal → lebih compact */
+  .img-zone.has-img img{aspect-ratio:4/3;}
+
+  /* Creator badge → lebih kecil */
+  .creator-avatar{top:10px;right:10px;}
+  .creator-btn{padding:3px 8px;}
+
+  /* Sidebar nav item → teks lebih kecil */
+  .nav-item{padding:8px 10px;font-size:12px;}
+  .nav-icon{width:16px;}
+
+  /* Panel & cards */
+  .panel{padding:12px;}
+  .panel h3{font-size:13px;}
+
+  /* Kamera */
+  .cam-video,.cam-preview img{max-width:100%;}
+  .cam-controls{gap:8px;}
+
+  /* Tombol aksi gambar */
+  #imgActions{flex-wrap:wrap;}
+  #imgActions .btn{font-size:11px;padding:5px 8px;}
+
+  /* Pin overlay */
+  .pin-box{padding:28px 16px;}
+
+  /* Chart wrap */
+  .chart-wrap{height:180px;}
+
+  /* Grid 2 kolom → 1 kolom */
+  .grid-2{grid-template-columns:1fr;}
+  .mega-detail-grid{grid-template-columns:1fr;}
+
+  /* Result count */
+  .result-count{font-size:10px;}
+
+  /* Export PDF tombol */
+  #exportPdfBtn{font-size:11px;padding:5px 8px;}
+}
 </style>
 </head>
 <body>
@@ -1352,8 +1424,9 @@ async function openModal(key){
   document.getElementById('modalItemMeta').textContent=`${data.pn||''} · ${data.warehouse||''} · Stock Code ${data.stock_code||''}`;
   const fields=[
     ['Warehouse',data.warehouse],['Mnemonic',data.mnemonic||'-'],
-    ['Class',data.class||'-'],['Group Class',data.group_class||'-'],
-    ['UOI',data.uoi||'-'],['Bin Location',data.bin_loc||'-'],
+    ['Class',data.class||'-'],['UOI',data.uoi||'-'],
+    ['Bin Location',data.bin_loc||'-'],['Expense Element',data.expense_element||'-'],
+    ['MIT',data.mit||'-'],['Dues In',data.dues_in||'-'],
     ['Owned SOH',fmtNum(data.owned_soh)],['Consign SOH',fmtNum(data.cons_soh)],
     ['Total SOH',fmtNum(data.total_soh)],['Available',fmtNum(data.available)],
     ['Issue Price',fmtRupiahFull(data.issue_price)],
@@ -1578,7 +1651,8 @@ const EXCEL_TO_DB={
   'WAREHOUSE':'warehouse','PN':'pn','MNEMONIC':'mnemonic','STOCK CODE':'stock_code','CLASS':'class',
   'ITEM NAME':'item_name','DESCRIPTION':'description','GROUP CLASS':'group_class','UOI':'uoi',
   'OWNED SOH':'owned_soh','BIN LOC':'bin_loc','CONS SOH':'cons_soh','TOTAL SOH':'total_soh',
-  'AVAILABLE':'available','ISSUE PRICE':'issue_price','AMOUNT OWN STOK':'amount_own_stok','AMOUNT CONSIGN':'amount_consign'
+  'AVAILABLE':'available','ISSUE PRICE':'issue_price','AMOUNT OWN STOK':'amount_own_stok','AMOUNT CONSIGN':'amount_consign',
+  'EXPENSE ELEMENT':'expense_element','MIT':'mit','DUES IN':'dues_in'
 };
 const NUM_COLS=new Set(['owned_soh','cons_soh','total_soh','available','issue_price','amount_own_stok','amount_consign']);
 
