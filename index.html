@@ -469,8 +469,18 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
         <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Total Nilai Inventory</div><div class="kpi-value" id="kpiValue"><span class="spinner"></span></div><div class="kpi-sub">own stock + consignment</div></div>
       </div>
       <div class="grid-2">
-        <div class="panel"><h3>Distribusi Item per Class <span class="tag">jumlah item</span></h3><div class="chart-wrap"><canvas id="chartClassDash"></canvas></div></div>
-        <div class="panel"><h3>Top 8 Gudang <span class="tag">by jumlah item</span></h3><div id="topWHList"><div class="empty-state"><span class="spinner"></span></div></div></div>
+        <div class="panel">
+          <h3>Distribusi Item per Class <span class="tag">jumlah item</span>
+            <button onclick="togglePanel('chartClassWrap','btnChartClass')" id="btnChartClass" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink-dim);cursor:pointer;margin-left:auto;">▲ Sembunyikan</button>
+          </h3>
+          <div id="chartClassWrap"><div class="chart-wrap"><canvas id="chartClassDash"></canvas></div></div>
+        </div>
+        <div class="panel">
+          <h3>Top 8 Gudang <span class="tag">by jumlah item</span>
+            <button onclick="togglePanel('topWHListWrap','btnTopWH')" id="btnTopWH" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink-dim);cursor:pointer;margin-left:auto;">▲ Sembunyikan</button>
+          </h3>
+          <div id="topWHListWrap"><div id="topWHList"><div class="empty-state"><span class="spinner"></span></div></div></div>
+        </div>
       </div>
       <div class="grid-2" style="grid-template-columns:1fr;">
         <div class="panel"><h3>Amount Inventory per Warehouse <span class="tag">nilai stock</span></h3><div id="warehouseAmountBox"><div class="empty-state"><span class="spinner"></span></div></div></div>
@@ -554,18 +564,25 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
       <!-- 2 CHARTS -->
       <div class="grid-2">
         <div class="panel">
-          <h3>Nilai Inventory MEGA per Class <span class="tag">Rp</span></h3>
-          <div class="chart-wrap tall"><canvas id="megaChartValue"></canvas></div>
+          <h3>Nilai Inventory MEGA per Class <span class="tag">Rp</span>
+            <button onclick="togglePanel('megaChartValueWrap','btnMegaValue')" id="btnMegaValue" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink-dim);cursor:pointer;margin-left:auto;">▲ Sembunyikan</button>
+          </h3>
+          <div id="megaChartValueWrap"><div class="chart-wrap tall"><canvas id="megaChartValue"></canvas></div></div>
         </div>
         <div class="panel">
-          <h3>Jumlah Item MEGA per Class <span class="tag">item</span></h3>
-          <div class="chart-wrap tall"><canvas id="megaChartCount"></canvas></div>
+          <h3>Jumlah Item MEGA per Class <span class="tag">item</span>
+            <button onclick="togglePanel('megaChartCountWrap','btnMegaCount')" id="btnMegaCount" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink-dim);cursor:pointer;margin-left:auto;">▲ Sembunyikan</button>
+          </h3>
+          <div id="megaChartCountWrap"><div class="chart-wrap tall"><canvas id="megaChartCount"></canvas></div></div>
         </div>
       </div>
 
       <!-- DETAIL TABLE -->
       <div class="panel">
-        <h3>Detail per Class — Warehouse MEGA <span class="tag">klik baris → filter Katalog</span></h3>
+        <h3>Detail per Class — Warehouse MEGA <span class="tag">klik baris → filter Katalog</span>
+          <button onclick="togglePanel('megaDetailTableWrap','btnMegaDetail')" id="btnMegaDetail" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink-dim);cursor:pointer;margin-left:auto;">▲ Sembunyikan</button>
+        </h3>
+        <div id="megaDetailTableWrap">
         <table class="data-mini" id="megaDetailTable">
           <thead>
             <tr>
@@ -581,6 +598,7 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
           </thead>
           <tbody id="megaDetailTbody"><tr><td colspan="8" style="text-align:center;padding:30px;"><span class="spinner"></span></td></tr></tbody>
         </table>
+        </div>
       </div>
 
       <!-- TOP ITEMS + LOW STOCK -->
@@ -2114,6 +2132,15 @@ document.getElementById('exportPdfBtn').addEventListener('click', async () => {
   btn.disabled = false;
   btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Export PDF';
 });
+
+/* ── TOGGLE PANEL ── */
+function togglePanel(contentId, btnId){
+  const el = document.getElementById(contentId);
+  const btn = document.getElementById(btnId);
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? '' : 'none';
+  btn.textContent = hidden ? '▲ Sembunyikan' : '▼ Tampilkan';
+}
 
 /* ── THEME TOGGLE ── */
 function setTheme(mode){
