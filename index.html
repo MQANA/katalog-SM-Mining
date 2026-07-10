@@ -1028,30 +1028,10 @@ async function loadDashboard(){
   // top value
   // Top 10 Item dihapus
 
-  // Warehouse Amount Inventory — ambil semua data (tanpa limit default 1000)
-  let warehouseAmt = [];
-  let from = 0;
-  const pageSize = 5000;
-  while(true){
-    const { data: batch } = await sb.from('items')
-      .select('warehouse, amount_own_stok, amount_consign')
-      .neq('warehouse', null)
-      .range(from, from + pageSize - 1);
-    if(!batch || batch.length===0) break;
-    warehouseAmt = warehouseAmt.concat(batch);
-    if(batch.length < pageSize) break;
-    from += pageSize;
-  }
+  // Warehouse Amount Inventory — agregasi di server via RPC
+  const { data: warehouseAmt } = await sb.rpc('get_warehouse_amount_inventory');
 
-  // Aggregate per warehouse
-  const whMap = {};
-  warehouseAmt.forEach(r=>{
-    if(!r.warehouse) return;
-    if(!whMap[r.warehouse]) whMap[r.warehouse]=0;
-    whMap[r.warehouse] += (parseFloat(r.amount_own_stok)||0) + (parseFloat(r.amount_consign)||0);
-  });
-  const whList = Object.entries(whMap)
-    .map(([wh,total])=>({warehouse:wh, total}))
+  const whList = (warehouseAmt||[])
     .filter(r=>r.total>0)
     .sort((a,b)=>b.total-a.total);
   const maxAmt = whList[0]?.total||1;
