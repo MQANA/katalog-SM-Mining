@@ -1011,7 +1011,7 @@ async function loadDashboard(){
         legend:{
           position:'right',
           labels:{
-            color:'#8C9BBF',
+            color: document.documentElement.getAttribute('data-theme')==='light' ? '#0A1628' : '#E2ECF8',
             boxWidth:12,
             font:{size:11},
             generateLabels: chart => {
