@@ -1002,6 +1002,8 @@ async function loadDashboard(){
 
   // donut chart (class)
   const cs=data.class_stats||[];
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const legendColor = isDark ? '#E2ECF8' : '#0A1628';
   if(chartClassDash) chartClassDash.destroy();
   chartClassDash=new Chart(document.getElementById('chartClassDash'),{
     type:'doughnut',
@@ -1011,7 +1013,7 @@ async function loadDashboard(){
         legend:{
           position:'right',
           labels:{
-            color: document.documentElement.getAttribute('data-theme')==='light' ? '#0A1628' : '#E2ECF8',
+            color: legendColor,
             boxWidth:12,
             font:{size:11},
             generateLabels: chart => {
@@ -1020,6 +1022,7 @@ async function loadDashboard(){
                 text: `${label}  ${fmtNum(data.datasets[0].data[i])}`,
                 fillStyle: data.datasets[0].backgroundColor[i],
                 strokeStyle: 'transparent',
+                fontColor: legendColor,
                 index: i
               }));
             }
@@ -1332,6 +1335,8 @@ async function preloadImages(rows){
 /* ---------- dashboard MEGA ---------- */
 let megaChartValue, megaChartCount;
 async function loadMegaDashboard(){
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const legendColor = isDark ? '#E2ECF8' : '#0A1628';
   // reset loading state
   ['megaKpiItems','megaKpiSOH','megaKpiOwn','megaKpiConsign','megaKpiHabis'].forEach(id=>{
     document.getElementById(id).innerHTML='<span class="spinner"></span>';
@@ -1371,7 +1376,7 @@ async function loadMegaDashboard(){
     },
     options:{
       plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>fmtRupiahFull(ctx.raw) } }},
-      scales:{ x:{ticks:{color:'#8C9BBF'},grid:{color:'#1F2B45'}}, y:{ticks:{color:'#8C9BBF',callback:v=>fmtRupiah(v)},grid:{color:'#1F2B45'}} }
+      scales:{ x:{ticks:{color:legendColor},grid:{color:isDark?'#1F2B45':'#E2E8F5'}}, y:{ticks:{color:legendColor,callback:v=>fmtRupiah(v)},grid:{color:isDark?'#1F2B45':'#E2E8F5'}} }
     }
   });
 
@@ -1383,7 +1388,7 @@ async function loadMegaDashboard(){
       labels: cs.map(c=>c.class||'?'),
       datasets:[{ data:cs.map(c=>c.item_count), backgroundColor:cs.map(c=>classColor(c.class||'')), borderWidth:0 }]
     },
-    options:{ plugins:{ legend:{ position:'right', labels:{ color:'#8C9BBF', boxWidth:10, font:{size:11} } }}, cutout:'58%' }
+    options:{ plugins:{ legend:{ position:'right', labels:{ color:legendColor, boxWidth:10, font:{size:11} } }}, cutout:'58%' }
   });
 
   // Detail table
@@ -2152,6 +2157,9 @@ function setTheme(mode){
   document.getElementById('btnDark').classList.toggle('active', mode==='dark');
   document.getElementById('btnLight').classList.toggle('active', mode==='light');
   try{ localStorage.setItem('sm-theme', mode); }catch(e){}
+  // Redraw charts agar warna legend menyesuaikan tema
+  if(typeof loadDashboard === 'function') loadDashboard();
+  if(typeof loadMegaDashboard === 'function' && document.getElementById('page-mega')?.classList.contains('active')) loadMegaDashboard();
 }
 // Restore saved theme on load
 (function(){
