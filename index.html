@@ -40,17 +40,17 @@ h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.01em;
 button{font-family:inherit;cursor:pointer;}
 
 /* PIN OVERLAY */
-.pin-overlay{position:fixed;inset:0;background:#05080FDD;backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;}
-.pin-overlay.hidden{display:none;}
-.pin-box{background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:32px 36px;width:340px;text-align:center;}
+.pin-overlay{position:fixed;inset:0;background:#05080FDD;backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;touch-action:auto;}
+.pin-overlay.hidden{display:none;pointer-events:none;}
+.pin-box{background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;text-align:center;position:relative;z-index:10000;touch-action:auto;}
 .pin-box h2{font-size:20px;margin:0 0 8px;}
 .pin-box p{color:var(--ink-dim);font-size:13px;margin:0 0 20px;}
 .pin-box .session-badge{background:var(--teal-soft);color:var(--teal);border:1px solid #3FC7B040;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:16px;}
-.pin-input{width:100%;background:var(--bg-panel-2);border:1px solid var(--line);color:var(--ink);padding:11px 14px;border-radius:8px;font-size:16px;letter-spacing:.2em;text-align:center;margin-bottom:10px;font-family:'JetBrains Mono';}
+.pin-input{width:100%;background:var(--bg-panel-2);border:1px solid var(--line);color:var(--ink);padding:11px 14px;border-radius:8px;font-size:16px;letter-spacing:.2em;text-align:center;margin-bottom:10px;font-family:'JetBrains Mono';box-sizing:border-box;}
 .pin-input:focus{outline:none;border-color:var(--amber);}
 .pin-error{color:var(--red);font-size:12px;min-height:18px;margin-bottom:8px;}
-.pin-btn{width:100%;background:var(--amber);color:#1A1208;border:none;padding:11px;border-radius:8px;font-size:14px;font-weight:700;margin-bottom:8px;}
-.pin-skip{width:100%;background:transparent;border:1px solid var(--line);color:var(--ink-dim);padding:9px;border-radius:8px;font-size:13px;}
+.pin-btn{width:100%;background:var(--amber);color:#1A1208;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:700;margin-bottom:10px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.pin-skip{width:100%;background:transparent;border:1px solid var(--line);color:var(--ink-dim);padding:12px;border-radius:8px;font-size:14px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .pin-skip:hover{border-color:var(--teal);color:var(--teal);}
 
 .shell{display:flex;min-height:100vh;}
@@ -72,7 +72,7 @@ nav.tabs{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
 .editor-badge.locked{background:var(--amber-soft);color:var(--amber);border-color:#F2A33C40;}
 
 /* CREATOR AVATAR */
-.creator-avatar{position:fixed;top:14px;right:18px;z-index:50;display:flex;align-items:center;gap:8px;}
+.creator-avatar{position:fixed;top:14px;right:18px;z-index:50;display:flex;align-items:center;gap:8px;pointer-events:auto;}
 .theme-toggle{background:var(--bg-panel);border:1px solid var(--line);border-radius:20px;padding:3px 4px;display:flex;gap:2px;transition:border-color .2s;}
 .theme-toggle button{background:none;border:none;width:26px;height:26px;border-radius:16px;font-size:13px;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;}
 .theme-toggle button.active{background:var(--teal);color:#000;}
@@ -601,19 +601,14 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
         </div>
       </div>
 
-      <!-- TOP ITEMS + LOW STOCK -->
-      <div class="grid-2">
+      <!-- CLASS A&C READINESS (termasuk SOH=0) -->
+      <div class="grid-2" style="grid-template-columns:1fr;">
         <div class="panel">
-          <h3>Top 10 Item Bernilai Tertinggi <span class="tag">MEGA</span></h3>
-          <table class="data-mini">
-            <thead><tr><th>Item</th><th>Class</th><th class="num">SOH</th><th class="num">Nilai</th></tr></thead>
-            <tbody id="megaTopValueTbody"></tbody>
-          </table>
+          <h3>Class A & C — Readiness MEGA <span class="tag">dari total <span id="acReadTotal">...</span> item</span></h3>
+          <div id="megaLowStockBox" style="margin-bottom:14px;"></div>
+          <div id="acReadinessBox"><div class="empty-state"><span class="spinner"></span></div></div>
         </div>
-        <div class="panel">
-          <h3>Class A & C — Stock Habis <span class="tag">total SOH = 0</span></h3>
-          <div id="megaLowStockBox"><div class="empty-state"><span class="spinner"></span></div></div>
-        </div>
+      </div>
       </div>
     </section>
 
@@ -818,6 +813,8 @@ document.getElementById('pinSubmitBtn').addEventListener('click', async()=>{
 });
 document.getElementById('pinInput').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('pinSubmitBtn').click(); });
 document.getElementById('pinSkipBtn').addEventListener('click',()=>{ setEditorMode(false); hidePinModal(); });
+document.getElementById('pinSkipBtn').addEventListener('touchend',(e)=>{ e.preventDefault(); setEditorMode(false); hidePinModal(); });
+document.getElementById('pinSubmitBtn').addEventListener('touchend',(e)=>{ e.preventDefault(); document.getElementById('pinSubmitBtn').click(); });
 
 /* ---------- navigation ---------- */
 document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -1416,82 +1413,127 @@ async function loadMegaDashboard(){
     });
   });
 
-  // Top value items
-  document.getElementById('megaTopValueTbody').innerHTML=(data.top_value_items||[]).map(r=>`
-    <tr>
-      <td style="color:var(--ink);font-size:12px;max-width:200px;white-space:normal;">${esc(r.item_name||'').slice(0,40)}</td>
-      <td><span class="chip" style="background:${classColor(r.class||'')}22;color:${classColor(r.class||'')};font-size:10px;">${esc(r.class||'-')}</span></td>
-      <td class="num">${fmtNum(r.total_soh)}</td>
-      <td class="num" style="color:var(--amber);">${fmtRupiahFull(r.total_value)}</td>
-    </tr>`).join('');
+  // Class A & C — Readiness
+  const { data: readiness } = await sb.rpc('get_ac_readiness_mega');
+  const rd = readiness || {};
+  const totalAC = rd.total_ac || 0;
+  document.getElementById('acReadTotal').textContent = fmtNum(totalAC);
 
-  // Class A & C — Stock Habis (total_soh::numeric = 0)
+  // Ambil data SOH=0 untuk card pertama
   const { data: acData } = await sb.rpc('get_ac_stock_habis_mega');
-
-  // Persentase siap: ambil lewat RPC agar cast numeric akurat
   const { data: acStats } = await sb.rpc('get_ac_stats_mega');
-
   const acList = acData || [];
-  window._acList = acList;
-  const acReadyCount = acStats?.[0]?.ready_count || acStats?.ready_count || 0;
   const acTotalCount = acStats?.[0]?.total_count || acStats?.total_count || 0;
-  const cntA = acList.filter(r=>r.class==='A').length;
-  const cntC = acList.filter(r=>r.class==='C').length;
-  const pctReady = acTotalCount ? ((acReadyCount)/acTotalCount*100).toFixed(1) : '0.0';
+  const acReadyCount = acStats?.[0]?.ready_count || acStats?.ready_count || 0;
+  const pctReady = acTotalCount ? (acReadyCount/acTotalCount*100).toFixed(1) : '0.0';
+
+  // Simpan data per kategori untuk popup
+  window._acCategoryData = {
+    soh_eq_0: acList,
+  };
+
+  const categories = [
+    { key:'soh_eq_0',   label:'SOH = 0',    desc:'Item stok habis',                      color:'var(--red)',   count: acList.length,    pct: acTotalCount?(acList.length/acTotalCount*100).toFixed(1):'0.0' },
+    { key:'soh_gt_0',   label:'SOH > 0',    desc:'Item dengan stok tersedia',            color:'var(--teal)',  count: rd.soh_gt_0||0,   pct: totalAC?((rd.soh_gt_0||0)/totalAC*100).toFixed(1):'0.0' },
+    { key:'soh_gt_min', label:'SOH > MIN',  desc:'Stok di atas level minimum',           color:'var(--green)', count: rd.soh_gt_min||0, pct: totalAC?((rd.soh_gt_min||0)/totalAC*100).toFixed(1):'0.0' },
+    { key:'fb_gt_0',    label:'FB > 0',     desc:'Free Balance positif (SOH+MIT+DI-DO)', color:'var(--amber)', count: rd.fb_gt_0||0,    pct: totalAC?((rd.fb_gt_0||0)/totalAC*100).toFixed(1):'0.0' },
+    { key:'fb_gt_min',  label:'FB > MIN',   desc:'Free Balance di atas level minimum',   color:'#9D7CF2',      count: rd.fb_gt_rop||0,  pct: totalAC?((rd.fb_gt_rop||0)/totalAC*100).toFixed(1):'0.0' },
+    { key:'rop_lte_fb', label:'ROP ≥ FB',   desc:'ROP sudah melewati Free Balance',      color:'#F87171',      count: rd.rop_lte_fb||0, pct: totalAC?((rd.rop_lte_fb||0)/totalAC*100).toFixed(1):'0.0' },
+  ];
 
   document.getElementById('megaLowStockBox').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
-      <div style="display:flex;gap:6px;">
-        <span class="chip" style="background:${classColor('A')}22;color:${classColor('A')};font-size:10px;">A: ${cntA} item habis</span>
-        <span class="chip" style="background:${classColor('C')}22;color:${classColor('C')};font-size:10px;">C: ${cntC} item habis</span>
-      </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      <span class="chip" style="background:${classColor('A')}22;color:${classColor('A')};font-size:10px;">A: ${acList.filter(r=>r.class==='A').length} habis</span>
+      <span class="chip" style="background:${classColor('C')}22;color:${classColor('C')};font-size:10px;">C: ${acList.filter(r=>r.class==='C').length} habis</span>
+      <span style="font-size:10px;color:var(--ink-faint);align-self:center;">dari ${fmtNum(acTotalCount)} item Class A & C MEGA</span>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
-      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
-        <div style="font-size:10px;color:var(--ink-faint);margin-bottom:2px;">Total habis</div>
-        <div style="font-size:22px;font-weight:700;color:var(--red);">${acList.length}</div>
-        <div style="font-size:10px;color:var(--ink-faint);">item</div>
-      </div>
-      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
-        <div style="font-size:10px;color:var(--ink-faint);margin-bottom:2px;">Stok tersedia</div>
-        <div style="font-size:22px;font-weight:700;color:var(--teal);">${pctReady}%</div>
-        <div style="font-size:10px;color:var(--ink-faint);">Class A & C SOH > 0</div>
-      </div>
-      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
-        <div style="font-size:10px;color:var(--ink-faint);margin-bottom:2px;">Total item</div>
-        <div style="font-size:22px;font-weight:700;color:var(--ink);">${acTotalCount||0}</div>
-        <div style="font-size:10px;color:var(--ink-faint);">Class A & C MEGA</div>
-      </div>
+  `;
+
+  document.getElementById('acReadinessBox').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">
+      ${categories.map(c=>`
+        <div onclick="showReadinessDetail('${c.key}')" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;position:relative;overflow:hidden;cursor:pointer;transition:border-color .2s,box-shadow .2s;" onmouseover="this.style.borderColor='${c.color}';this.style.boxShadow='0 0 16px ${c.color}22'" onmouseout="this.style.borderColor='var(--line)';this.style.boxShadow='none'">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${c.color};"></div>
+          <div style="font-size:13px;font-weight:700;color:${c.color};margin-bottom:2px;">${c.label}</div>
+          <div style="font-size:11px;color:var(--ink-faint);margin-bottom:10px;">${c.desc}</div>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:22px;font-weight:700;color:var(--ink);">${fmtNum(c.count)}</span>
+            <span style="font-size:13px;font-weight:600;color:${c.color};">${c.pct}%</span>
+          </div>
+          <div class="bar-track" style="height:5px;">
+            <div style="height:100%;width:${c.pct}%;background:${c.color};border-radius:4px;transition:width .5s;"></div>
+          </div>
+          <div style="font-size:10px;color:${c.color};margin-top:8px;opacity:.7;">Klik untuk lihat detail →</div>
+        </div>`).join('')}
     </div>
-    ${acList.length===0
-      ? `<div style="color:var(--ink-faint);font-size:12.5px;padding:8px 0;">Semua item Class A & C di MEGA masih ada stok. ✅</div>`
-      : `<div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:11px;color:var(--ink-faint);">${acList.length} item ditemukan</span>
-            <button onclick="(function(){const t=document.getElementById('acDetailTable');const b=document.getElementById('acToggleBtn');const shown=t.style.display!=='none';t.style.display=shown?'none':'block';b.textContent=shown?'▼ Tampilkan Detail':'▲ Sembunyikan Detail';})()" id="acToggleBtn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink);cursor:pointer;">▼ Tampilkan Detail</button>
-          </div>
-          <div id="acDetailTable" style="display:none;border:1px solid var(--line);border-radius:8px;overflow:hidden;">
-            <div style="display:grid;grid-template-columns:1fr 48px 60px;padding:6px 10px;background:var(--bg-panel);border-bottom:1px solid var(--line);">
-              <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;">ITEM</span>
-              <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:center;">CLASS</span>
-              <span style="font-size:10px;color:var(--ink-faint);font-weight:600;letter-spacing:.04em;text-align:right;">SOH</span>
-            </div>
-            ${acList.map((r,i)=>`
-              <div onclick="openModal('MEGA|${r.stock_code}')" style="display:grid;grid-template-columns:1fr 48px 60px;padding:8px 10px;border-bottom:${i<acList.length-1?'1px solid var(--line-soft)':'none'};align-items:center;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-panel)'" onmouseout="this.style.background='transparent'">
-                <div>
-                  <div style="font-size:12px;color:var(--ink);font-weight:500;">${esc(r.item_name||'').slice(0,34)}</div>
-                  <div class="mono" style="color:var(--ink-faint);font-size:10px;">${esc(r.stock_code||'')}</div>
-                </div>
-                <div style="text-align:center;">
-                  <span class="chip" style="background:${classColor(r.class||'')}22;color:${classColor(r.class||'')};font-size:9px;">${esc(r.class||'')}</span>
-                </div>
-                <div style="text-align:right;">
-                  <span class="badge warn" style="font-size:10px;">0</span>
-                </div>
-              </div>`).join('')}
-          </div>
-        </div>`
-    }`;
+
+    <!-- POPUP DETAIL -->
+    <div id="readinessDetailPopup" style="display:none;margin-top:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-panel);border-bottom:1px solid var(--line);">
+        <span id="readinessDetailTitle" style="font-size:13px;font-weight:600;color:var(--ink);"></span>
+        <button onclick="document.getElementById('readinessDetailPopup').style.display='none'" style="background:none;border:none;color:var(--ink-faint);font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div id="readinessDetailList" style="max-height:320px;overflow-y:auto;"></div>
+    </div>
+  `;
+
+}
+
+/* ── READINESS DETAIL POPUP ── */
+async function showReadinessDetail(key){
+  const popup = document.getElementById('readinessDetailPopup');
+  const title = document.getElementById('readinessDetailTitle');
+  const list  = document.getElementById('readinessDetailList');
+
+  const labels = {
+    soh_eq_0:  'SOH = 0 — Item Stok Habis',
+    soh_gt_0:  'SOH > 0 — Item Stok Tersedia',
+    soh_gt_min:'SOH > MIN — Stok di Atas Minimum',
+    fb_gt_0:   'FB > 0 — Free Balance Positif',
+    fb_gt_min: 'FB > MIN — Free Balance di Atas Minimum',
+    rop_lte_fb:'ROP ≥ FB — ROP Melewati Free Balance',
+  };
+
+  title.textContent = labels[key] || key;
+  list.innerHTML = '<div style="padding:16px;text-align:center;"><span class="spinner"></span></div>';
+  popup.style.display = 'block';
+  popup.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  let rows = [];
+  if(key === 'soh_eq_0'){
+    rows = window._acCategoryData?.soh_eq_0 || [];
+  } else {
+    // Query langsung dari DB
+    const queryMap = {
+      soh_gt_0:   ()=> sb.from('items').select('item_name,stock_code,class,total_soh').eq('warehouse','MEGA').in('class',['A','C']).gt('total_soh',0).order('item_name').limit(200),
+      soh_gt_min: ()=> sb.rpc('get_ac_detail_mega', {rule_key:'soh_gt_min'}),
+      fb_gt_0:    ()=> sb.rpc('get_ac_detail_mega', {rule_key:'fb_gt_0'}),
+      fb_gt_min:  ()=> sb.rpc('get_ac_detail_mega', {rule_key:'fb_gt_min'}),
+      rop_lte_fb: ()=> sb.rpc('get_ac_detail_mega', {rule_key:'rop_lte_fb'}),
+    };
+    const fn = queryMap[key];
+    if(fn){
+      const { data } = await fn();
+      rows = data || [];
+    }
+  }
+
+  if(!rows.length){
+    list.innerHTML = '<div style="padding:14px;color:var(--ink-faint);font-size:12px;">Tidak ada item.</div>';
+    return;
+  }
+
+  list.innerHTML = rows.map((r,i)=>`
+    <div onclick="openModal('MEGA|${r.stock_code}')" style="display:grid;grid-template-columns:1fr 52px 70px;padding:8px 14px;border-bottom:1px solid var(--line-soft);align-items:center;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-panel)'" onmouseout="this.style.background='transparent'">
+      <div>
+        <div style="font-size:12px;color:var(--ink);font-weight:500;">${esc((r.item_name||'').slice(0,36))}</div>
+        <div class="mono" style="color:var(--ink-faint);font-size:10px;">${esc(r.stock_code||'')}</div>
+      </div>
+      <div style="text-align:center;">
+        <span class="chip" style="background:${classColor(r.class||'')}22;color:${classColor(r.class||'')};font-size:9px;">${esc(r.class||'')}</span>
+      </div>
+      <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--ink-dim);">${fmtNum(r.total_soh??r.soh??0)}</div>
+    </div>`).join('');
 }
 
 /* ---------- modal ---------- */
@@ -1732,7 +1774,7 @@ const EXCEL_TO_DB={
   'ITEM NAME':'item_name','DESCRIPTION':'description','GROUP CLASS':'group_class','UOI':'uoi',
   'OWNED SOH':'owned_soh','BIN LOC':'bin_loc','CONS SOH':'cons_soh','TOTAL SOH':'total_soh',
   'AVAILABLE':'available','ISSUE PRICE':'issue_price','AMOUNT OWN STOK':'amount_own_stok','AMOUNT CONSIGN':'amount_consign',
-  'EXPENSE ELEMENT':'expense_element','MIT':'mit','DUES IN':'dues_in'
+  'EXPENSE ELEMENT':'expense_element','MIT':'mit','DUES IN':'dues_in','DUES OUT':'dues_out'
 };
 const NUM_COLS=new Set(['owned_soh','cons_soh','total_soh','available','issue_price','amount_own_stok','amount_consign']);
 
@@ -2161,9 +2203,16 @@ function setTheme(mode){
   if(typeof loadDashboard === 'function') loadDashboard();
   if(typeof loadMegaDashboard === 'function' && document.getElementById('page-mega')?.classList.contains('active')) loadMegaDashboard();
 }
-// Restore saved theme on load
+// Restore saved theme on load — jangan panggil loadDashboard saat init
 (function(){
-  try{ const t=localStorage.getItem('sm-theme'); if(t) setTheme(t); }catch(e){}
+  try{
+    const t=localStorage.getItem('sm-theme');
+    if(t==='light'){
+      document.documentElement.setAttribute('data-theme','light');
+      document.getElementById('btnDark').classList.remove('active');
+      document.getElementById('btnLight').classList.add('active');
+    }
+  }catch(e){}
 })();
 </script>
 
