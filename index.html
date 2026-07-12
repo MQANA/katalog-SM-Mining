@@ -83,7 +83,7 @@ nav.tabs{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
 .creator-info .tt-name{font-size:11px;font-weight:700;color:var(--ink);font-family:'Dancing Script',cursive;line-height:1.2;}
 .creator-info .tt-role{font-size:9.5px;color:var(--amber);margin-top:0;letter-spacing:.02em;font-family:'Dancing Script',cursive;font-weight:600;}
 
-.main{flex:1;min-width:0;padding:26px 32px 60px;}
+.main{flex:1;min-width:0;padding:26px 32px 60px;overflow-x:hidden;overflow-y:auto;}
 .page{display:none;}
 .page.active{display:block;animation:fade .25s ease;}
 @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;}}
@@ -614,6 +614,10 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
 
     <!-- UPLOAD -->
     <section class="page" id="page-upload">
+      <div class="mobile-bar">
+        <button onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+        <span style="font-size:13px;font-weight:600;color:var(--ink);">Update Data</span>
+      </div>
       <div class="page-head"><div><div class="eyebrow">Sinkronisasi</div><h1>Update Data via Excel</h1><p>Upload file .xlsx / .xls / .csv untuk memperbarui database secara permanen.</p></div></div>
 
       <div id="uploadAuthBanner" class="note-banner warn" style="display:none;">🔒 Fitur ini memerlukan login PIN editor. <button class="btn small" style="margin-left:8px;" onclick="showPinModal()">Login PIN</button></div>
