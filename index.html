@@ -185,8 +185,8 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
 .detail-item .v{font-size:13px;color:var(--ink);font-family:'JetBrains Mono';}
 
 /* UPLOAD */
-.dropzone{border:1.5px dashed var(--line);border-radius:var(--radius);padding:36px 20px;text-align:center;background:var(--bg-panel);cursor:pointer;transition:border-color .15s;}
-.dropzone:hover,.dropzone.drag{border-color:var(--amber);background:var(--amber-soft);}
+.dropzone{border:2px dashed var(--line);border-radius:12px;padding:32px 20px;text-align:center;background:var(--bg);cursor:pointer;transition:border-color .2s,background .2s;}
+.dropzone:hover,.dropzone.drag{border-color:var(--teal);background:var(--teal-soft);}
 .dropzone .icon{font-size:28px;margin-bottom:10px;}
 .dropzone h3{margin:0 0 6px;font-size:14.5px;}
 .dropzone p{margin:0;color:var(--ink-faint);font-size:12px;}
@@ -615,34 +615,71 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
     <!-- UPLOAD -->
     <section class="page" id="page-upload">
       <div class="page-head"><div><div class="eyebrow">Sinkronisasi</div><h1>Update Data via Excel</h1><p>Upload file .xlsx / .xls / .csv untuk memperbarui database secara permanen.</p></div></div>
+
       <div id="uploadAuthBanner" class="note-banner warn" style="display:none;">🔒 Fitur ini memerlukan login PIN editor. <button class="btn small" style="margin-left:8px;" onclick="showPinModal()">Login PIN</button></div>
-      <div class="note-banner">✅ Data diupload langsung ke Supabase — tersimpan permanen dan langsung terlihat oleh semua pengguna.</div>
+
+      <!-- INFO BANNER -->
+      <div style="background:var(--teal-soft);border:1px solid #00D4FF30;border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--teal);">
+        <span style="font-size:18px;">✅</span>
+        <span>Data diupload langsung ke Supabase — tersimpan permanen dan langsung terlihat oleh semua pengguna.</span>
+      </div>
+
       <div class="grid-2">
-        <div class="panel"><h3>Upload File Excel</h3>
-          <div class="dropzone" id="dropzone">
-            <div class="icon">📤</div>
-            <h3>Drag & drop file di sini, atau klik untuk pilih</h3>
-            <p>Format kolom harus sesuai header asli (WAREHOUSE, PN, STOCK CODE, CLASS, ITEM NAME, dll)</p>
-            <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsb,.csv">
+        <!-- UPLOAD PANEL -->
+        <div class="panel" style="display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;">Upload File Excel</h3>
+
+          <!-- DROPZONE -->
+          <div class="dropzone" id="dropzone" style="border:2px dashed var(--line);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--bg);">
+            <div style="font-size:36px;margin-bottom:10px;">📤</div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:6px;">Drag & drop file di sini</div>
+            <div style="font-size:12px;color:var(--ink-faint);margin-bottom:12px;">atau klik untuk pilih file</div>
+            <div style="display:inline-block;background:var(--teal-soft);border:1px solid #00D4FF40;color:var(--teal);font-size:11px;padding:4px 12px;border-radius:20px;">.xlsx · .xls · .xlsb · .csv</div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsb,.csv" style="display:none;">
           </div>
-          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-            <button class="btn" id="downloadTemplateBtn">⬇ Download Template</button>
+
+          <!-- ACTIONS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" id="downloadTemplateBtn" style="display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download Template
+            </button>
           </div>
-          <div class="log-box" id="uploadLog">Menunggu file diupload...</div>
+
+          <!-- LOG -->
+          <div class="log-box" id="uploadLog" style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:12px;font-family:'JetBrains Mono',monospace;min-height:80px;color:var(--ink-dim);">Menunggu file diupload...</div>
         </div>
-        <div class="panel"><h3>Mode Update</h3>
-          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--ink-dim);">
-            <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;">
-              <input type="radio" name="updateMode" value="upsert" checked style="margin-top:3px;">
-              <span><strong style="color:var(--ink)">Merge / Upsert</strong> — baris dengan kombinasi Gudang+Stock Code sama ditimpa, baris baru ditambahkan ke database.</span>
-            </label>
-            <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;">
-              <input type="radio" name="updateMode" value="replace" style="margin-top:3px;">
-              <span><strong style="color:var(--ink)">Replace Penuh</strong> — seluruh tabel dihapus lalu diisi ulang dengan data dari file yang diupload.</span>
-            </label>
+
+        <!-- MODE + HISTORY PANEL -->
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <!-- MODE UPDATE -->
+          <div class="panel">
+            <h3 style="margin:0 0 14px;">Mode Update</h3>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--line)'">
+                <input type="radio" name="updateMode" value="upsert" checked style="margin-top:2px;accent-color:var(--teal);">
+                <div>
+                  <div style="font-size:13px;font-weight:600;color:var(--teal);margin-bottom:3px;">Merge / Upsert</div>
+                  <div style="font-size:12px;color:var(--ink-faint);">Baris dengan kombinasi Gudang+Stock Code sama ditimpa, baris baru ditambahkan ke database.</div>
+                </div>
+              </label>
+              <label style="display:flex;gap:12px;align-items:flex-start;cursor:pointer;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;transition:border-color .2s;" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--line)'">
+                <input type="radio" name="updateMode" value="replace" style="margin-top:2px;accent-color:var(--red);">
+                <div>
+                  <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:3px;">Replace Penuh</div>
+                  <div style="font-size:12px;color:var(--ink-faint);">Seluruh tabel dihapus lalu diisi ulang dengan data dari file yang diupload.</div>
+                </div>
+              </label>
+            </div>
           </div>
-          <h3 style="margin-top:22px;">Riwayat Upload Sesi Ini</h3>
-          <div id="uploadHistory" style="font-size:12px;color:var(--ink-faint);">Belum ada upload pada sesi ini.</div>
+
+          <!-- RIWAYAT -->
+          <div class="panel">
+            <h3 style="margin:0 0 12px;">Riwayat Upload Sesi Ini</h3>
+            <div id="uploadHistory" style="font-size:12px;color:var(--ink-faint);">Belum ada upload pada sesi ini.</div>
+          </div>
+
         </div>
       </div>
     </section>
