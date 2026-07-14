@@ -609,6 +609,17 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
           <div id="acReadinessBox"><div class="empty-state"><span class="spinner"></span></div></div>
         </div>
       </div>
+
+      <!-- TREND NILAI INVENTORY CLASS A & C -->
+      <div class="grid-2" style="grid-template-columns:1fr;">
+        <div class="panel">
+          <h3>Trend Nilai Inventory Class A & C — MEGA <span class="tag" id="acTrendRange">30 hari terakhir</span></h3>
+          <div id="acTrendEmpty" style="display:none;color:var(--ink-faint);font-size:12.5px;padding:20px 0;text-align:center;">
+            Data trend baru mulai direkam. Grafik akan terisi seiring waktu (1 titik data per hari).
+          </div>
+          <div class="chart-wrap tall" id="acTrendChartWrap"><canvas id="acTrendChart"></canvas></div>
+        </div>
+      </div>
     </section>
 
     <!-- UPLOAD -->
@@ -1370,7 +1381,7 @@ async function preloadImages(rows){
 }
 
 /* ---------- dashboard MEGA ---------- */
-let megaChartValue, megaChartCount;
+let megaChartValue, megaChartCount, acTrendChart;
 async function loadMegaDashboard(){
   const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
   const legendColor = isDark ? '#E2ECF8' : '#0A1628';
@@ -1517,6 +1528,69 @@ async function loadMegaDashboard(){
     </div>
   `;
 
+  // Trend Nilai Inventory Class A & C
+  const { data: trendData } = await sb.rpc('get_ac_trend', { days_back: 30 });
+  const trend = trendData || [];
+
+  if(trend.length < 2){
+    document.getElementById('acTrendEmpty').style.display = 'block';
+    document.getElementById('acTrendChartWrap').style.display = 'none';
+  } else {
+    document.getElementById('acTrendEmpty').style.display = 'none';
+    document.getElementById('acTrendChartWrap').style.display = 'block';
+  }
+
+  if(acTrendChart) acTrendChart.destroy();
+  if(trend.length > 0){
+    acTrendChart = new Chart(document.getElementById('acTrendChart'), {
+      type: 'line',
+      data: {
+        labels: trend.map(t => new Date(t.snapshot_date).toLocaleDateString('id-ID', {day:'2-digit', month:'short'})),
+        datasets: [
+          {
+            label: 'Total Nilai (A+C)',
+            data: trend.map(t => t.total_amount),
+            borderColor: '#00D4FF',
+            backgroundColor: '#00D4FF15',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3,
+            pointBackgroundColor: '#00D4FF',
+          },
+          {
+            label: 'Class A',
+            data: trend.map(t => t.class_a_amount),
+            borderColor: classColor('A'),
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.35,
+            pointRadius: 2,
+            borderDash: [4,3],
+          },
+          {
+            label: 'Class C',
+            data: trend.map(t => t.class_c_amount),
+            borderColor: classColor('C'),
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.35,
+            pointRadius: 2,
+            borderDash: [4,3],
+          },
+        ]
+      },
+      options: {
+        plugins: {
+          legend: { position:'top', labels:{ color: legendColor, boxWidth:12, font:{size:11} } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtRupiahFull(ctx.raw)}` } }
+        },
+        scales: {
+          x: { ticks:{ color: legendColor, font:{size:10} }, grid:{ color: isDark?'#1F2B45':'#E2E8F5' } },
+          y: { ticks:{ color: legendColor, callback: v=>fmtRupiah(v), font:{size:10} }, grid:{ color: isDark?'#1F2B45':'#E2E8F5' } }
+        }
+      }
+    });
+  }
 }
 
 /* ── READINESS DETAIL POPUP ── */
