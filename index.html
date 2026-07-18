@@ -727,6 +727,17 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
         <div id="imgActions" style="margin-top:10px;padding:0 4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;"></div>
       </div>
       <div class="detail-grid" id="modalDetailGrid"></div>
+
+      <!-- RIWAYAT PERUBAHAN STOK -->
+      <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h4 style="margin:0;font-size:13px;color:var(--ink);">📈 Riwayat Perubahan Stok</h4>
+          <button onclick="(function(){const b=document.getElementById('historyBox');const t=document.getElementById('historyToggleBtn');const show=b.style.display==='none';b.style.display=show?'block':'none';t.textContent=show?'▲ Sembunyikan':'▼ Tampilkan';})()" id="historyToggleBtn" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink-dim);cursor:pointer;">▼ Tampilkan</button>
+        </div>
+        <div id="historyBox" style="display:none;">
+          <div id="historyList" style="padding:14px;font-size:12px;color:var(--ink-faint);">Memuat...</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1671,7 +1682,127 @@ async function openModal(key){
   ];
   document.getElementById('modalDetailGrid').innerHTML=fields.map(([l,v])=>`<div class="detail-item"><div class="lbl">${l}</div><div class="v">${esc(v)}</div></div>`).join('');
   await refreshModalImg(key);
+  document.getElementById('historyBox').style.display='none';
+  document.getElementById('historyToggleBtn').textContent='▼ Tampilkan';
+  loadStockHistory(warehouse, stockCode);
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+let stockHistoryChart;
+async function loadStockHistory(warehouse, stockCode){
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<div style="text-align:center;padding:20px;"><span class="spinner"></span></div>';
+  const { data, error } = await sb.rpc('get_stock_history', { p_warehouse: warehouse, p_stock_code: stockCode, p_limit: 30 });
+
+  // Ambil hanya perubahan total_soh, urutkan kronologis (lama → baru)
+  const totalSohRows = (data||[]).filter(h=>h.field_name==='total_soh').slice().reverse();
+
+  if(error || totalSohRows.length===0){
+    list.innerHTML = '<div style="padding:14px;color:var(--ink-faint);text-align:center;">Belum ada riwayat perubahan untuk item ini.</div>';
+    return;
+  }
+
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const legendColor = isDark ? '#E2ECF8' : '#0A1628';
+  const gridColor = isDark ? '#1F2B45' : '#E2E8F5';
+
+  // Bangun titik data: titik awal (old_value pertama) + tiap new_value berikutnya
+  const labels = [];
+  const values = [];
+  const first = totalSohRows[0];
+  labels.push(new Date(first.changed_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) + ' (awal)');
+  values.push(first.old_value||0);
+  totalSohRows.forEach(h=>{
+    labels.push(new Date(h.changed_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}));
+    values.push(h.new_value||0);
+  });
+
+  const current = values[values.length-1];
+  const peak = Math.max(...values);
+  const lastChange = (totalSohRows[totalSohRows.length-1].new_value||0) - (totalSohRows[totalSohRows.length-1].old_value||0);
+  const isHabis = current === 0;
+  const diffColor = lastChange > 0 ? 'var(--green)' : (lastChange < 0 ? 'var(--red)' : 'var(--ink-faint)');
+  const diffSign = lastChange > 0 ? '+' : '';
+
+  // Tentukan titik dengan penurunan signifikan (>=30% dari nilai sebelumnya)
+  const dropIndexes = [];
+  for(let i=1;i<values.length;i++){
+    if(values[i-1] > 0 && (values[i-1]-values[i])/values[i-1] >= 0.3) dropIndexes.push(i);
+  }
+  const pointColors = values.map((v,i)=> dropIndexes.includes(i) ? '#FF4D6A' : '#00D4FF');
+  const pointRadii = values.map((v,i)=> dropIndexes.includes(i) ? 6 : 3);
+
+  list.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-size:11px;color:var(--ink-faint);">Total SOH — ${totalSohRows.length} perubahan tercatat</span>
+      ${isHabis ? '<span style="font-size:10.5px;color:var(--red);background:var(--red-soft);padding:3px 10px;border-radius:6px;">⚠ Stok habis</span>' : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--ink-faint);">SOH saat ini</div>
+        <div style="font-size:18px;font-weight:700;color:var(--ink);margin-top:3px;">${fmtNum(current)}</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--ink-faint);">Puncak tertinggi</div>
+        <div style="font-size:18px;font-weight:700;color:var(--teal);margin-top:3px;">${fmtNum(peak)}</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--ink-faint);">Perubahan terakhir</div>
+        <div style="font-size:18px;font-weight:700;color:${diffColor};margin-top:3px;">${diffSign}${fmtNum(lastChange)}</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:10.5px;color:var(--ink-faint);">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#00D4FF;"></span>Total SOH</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:#FF4D6A;"></span>Penurunan signifikan</span>
+    </div>
+    <div style="position:relative;width:100%;height:200px;">
+      <canvas id="stockHistoryChart"></canvas>
+    </div>
+  `;
+
+  if(stockHistoryChart) stockHistoryChart.destroy();
+  const ctx = document.getElementById('stockHistoryChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,200);
+  grad.addColorStop(0, '#00D4FF33');
+  grad.addColorStop(1, '#00D4FF00');
+
+  stockHistoryChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        borderColor: '#00D4FF',
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.35,
+        pointRadius: pointRadii,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: isDark ? '#0D1424' : '#FFFFFF',
+        pointBorderWidth: 2,
+        pointHoverRadius: 7,
+        borderWidth: 2.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:false },
+        tooltip: {
+          backgroundColor: isDark ? '#0D1424' : '#FFFFFF',
+          borderColor: '#00D4FF40', borderWidth: 1,
+          titleColor: legendColor, bodyColor: legendColor,
+          padding: 10, cornerRadius: 8,
+          callbacks: { label: c => ' Total SOH: ' + fmtNum(c.raw) }
+        }
+      },
+      scales: {
+        x: { ticks:{ color: legendColor, font:{size:9.5} }, grid:{ display:false } },
+        y: { ticks:{ color: legendColor, font:{size:10} }, grid:{ color: gridColor }, beginAtZero:true }
+      }
+    }
+  });
 }
 async function refreshModalImg(key){
   const [warehouse,stockCode]=key.split('|');
