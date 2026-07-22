@@ -604,7 +604,13 @@ table.cat-table td.pn{font-family:'JetBrains Mono';color:var(--teal);}
       <!-- CLASS A&C READINESS (termasuk SOH=0) -->
       <div class="grid-2" style="grid-template-columns:1fr;">
         <div class="panel">
-          <h3>Class A & C — Readiness MEGA <span class="tag">dari total <span id="acReadTotal">...</span> item</span></h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+            <h3 style="margin:0;">Class A & C — Readiness MEGA <span class="tag">dari total <span id="acReadTotal">...</span> item</span></h3>
+            <button id="sendReportBtn" class="btn small" style="background:var(--amber);color:#1A1208;display:flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+              Kirim Laporan Stock Rendah
+            </button>
+          </div>
           <div id="megaLowStockBox" style="margin-bottom:14px;"></div>
           <div id="acReadinessBox"><div class="empty-state"><span class="spinner"></span></div></div>
         </div>
@@ -2433,6 +2439,98 @@ function togglePanel(contentId, btnId){
   el.style.display = hidden ? '' : 'none';
   btn.textContent = hidden ? '▲ Sembunyikan' : '▼ Tampilkan';
 }
+
+/* ── KIRIM LAPORAN STOCK RENDAH (manual) — generate XLSX rapi di browser ── */
+document.getElementById('sendReportBtn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('sendReportBtn');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Menyiapkan data...';
+  try {
+    // Ambil semua item Class A/C MEGA yang SOH <= MIN
+    const { data: items, error } = await sb
+      .from('items')
+      .select('item_name, stock_code, class, total_soh, mit, dues_in')
+      .eq('warehouse', 'MEGA')
+      .in('class', ['A','C']);
+    if (error) throw error;
+
+    const { data: minMaxData, error: mmErr } = await sb
+      .from('min_max')
+      .select('stock_code, min');
+    if (mmErr) throw mmErr;
+
+    const minMap = {};
+    (minMaxData||[]).forEach(m => { minMap[String(m.stock_code)] = parseFloat(m.min)||0; });
+
+    const rows = (items||[])
+      .map(it => {
+        const min = minMap[String(it.stock_code)];
+        if (min === undefined) return null;
+        const soh = parseFloat(it.total_soh)||0;
+        if (soh > min) return null;
+        return {
+          'Item': it.item_name || '',
+          'Stock Code': it.stock_code || '',
+          'Class': it.class || '',
+          'SOH': soh,
+          'MIN': min,
+          'MIT': parseFloat(it.mit)||0,
+          'Dues In': parseFloat(it.dues_in)||0,
+        };
+      })
+      .filter(Boolean)
+      .sort((a,b) => a['Class'].localeCompare(b['Class']) || a['Item'].localeCompare(b['Item']));
+
+    if (rows.length === 0) {
+      alert('Tidak ada item Class A/C di MEGA yang berada di bawah MIN saat ini. Email tidak dikirim.');
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+      return;
+    }
+
+    btn.innerHTML = '<span class="spinner"></span> Membuat file Excel...';
+
+    // Buat worksheet rapi
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      { wch: 34 }, // Item
+      { wch: 14 }, // Stock Code
+      { wch: 8 },  // Class
+      { wch: 10 }, // SOH
+      { wch: 10 }, // MIN
+      { wch: 10 }, // MIT
+      { wch: 10 }, // Dues In
+    ];
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+    ws['!autofilter'] = { ref: `A1:G${rows.length+1}` };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Stock Rendah');
+
+    // Convert ke base64
+    const xlsxBase64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+
+    btn.innerHTML = '<span class="spinner"></span> Mengirim email...';
+
+    const countA = rows.filter(r => r['Class'] === 'A').length;
+    const countC = rows.filter(r => r['Class'] === 'C').length;
+
+    const { data: sendResult, error: sendError } = await sb.rpc('send_low_stock_email_xlsx', {
+      p_xlsx_base64: xlsxBase64,
+      p_count: rows.length,
+      p_count_a: countA,
+      p_count_c: countC
+    });
+    if (sendError) throw sendError;
+
+    alert(`Laporan berhasil dikirim! ${rows.length} item tercantum dalam file Excel terlampir.`);
+  } catch (err) {
+    alert('Gagal mengirim laporan: ' + err.message);
+  }
+  btn.disabled = false;
+  btn.innerHTML = originalHTML;
+});
 
 /* ── THEME TOGGLE ── */
 function setTheme(mode){
